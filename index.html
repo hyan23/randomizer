@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <title>randomizer</title>
+    <style type="text/css">
+        div {
+            margin: 20px;
+        }
+
+        .container {
+            margin: 10% 30%;
+            display: none;
+        }
+
+        .emphasize {
+            color: red;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container" class="container">
+        <div>
+            <p>
+                <b>随机列表生成器</b>
+                作者: <a href="https://github.com/hyan23" target="_blank">hyan23</a>
+            </p>
+            <p><a href="doc/guide.html" target="_blank">本工具支持url编程</a>&nbsp;|&nbsp;<a href="doc/app.html" target="_blank">应用列表</a></p>
+        </div>
+        <div>
+            <span class="emphasize">*</span>模式:
+            <input name="mode" type="radio" value="binary">二进制
+            <input name="mode" type="radio" value="octal">八进制
+            <input name="mode" type="radio" value="decimal">十进制
+            <input name="mode" type="radio" value="hexadecimal" checked>十六进制
+            <input name="mode" type="radio" value="string">字符串
+            <br> 十进制精度:
+            <input name="precision" type="text" maxlength="6" value="0">
+            <br> 十六进制风格:
+            <input name="style" type="radio" value="c" checked>C
+            <input name="style" type="radio" value="masm">Masm
+            <input name="style" type="radio" value="none">无
+            <br> 字符串候选(以英文分号隔开):
+            <input name="cand" type="text" maxlength="100" value="一;二;三;四;五;六">
+            <br> <span class="emphasize">*</span>数据个数:
+            <input name="num" type="text" maxlength="4" value="10">
+            <br> 每行显示个数:
+            <input name="row" type="text" maxlength="4" value="10">
+            <br> <span class="emphasize">*</span>数据范围: [
+            <input name="lb" type="text" maxlength="10" value="0">,&nbsp;
+            <input name="ub" type="text" maxlength="10" value="0xff">]
+            <br> 分区权重(以英文分号隔开): <a title="分区把数据范围均分为分号数+1份, 每个分区的权重可取[0,10]内的整数值, 权重越大, 选中该分区内数字的概率越大" href="#">帮助?</a>
+            <input name="weight" type="text" maxlength="100" value="1;1">
+            <br> 分隔符:
+            <input name="deli" type="text" maxlength="4" value=", ">
+            <br> 允许重复:
+            <input name="repeat" type="checkbox" checked> 行尾分隔符:
+            <input name="tail" type="checkbox" checked>
+            <br> 排序:
+            <input name="order" type="radio" value="asce">升序
+            <input name="order" type="radio" value="desc">降序
+            <input name="order" type="radio" value="none" checked>不排序
+            <br>
+            <br>
+            <input type="button" onclick="manual();" value="生成">
+            <input type="button" onclick="copy();" value="拷贝">
+            <input type="button" onclick="location.reload();" value="重置">
+        </div>
+        <div>
+            <pre id="result"></pre>
+        </div>
+    </div>
+</body>
+
+<script>
+    function variance(arr) {
+        var sum = 0;
+        for (var i = 0; i < arr.length; i++) {
+            sum += arr[i];
+        }
+        var mean = sum / arr.length;
+        sum = 0;
+        for (var i = 0; i < arr.length; i++) {
+            sum += Math.pow(arr[i] - mean, 2);
+        }
+        return sum / arr.length;
+    }
+
+    function general(obj) {
+        for (var i in obj) {
+            if (typeof obj[i] == 'number' && isNaN(obj[i])) {
+                return '数据格式有误';
+            }
+        }
+        return null;
+    }
+
+    function arrayIn(arr, lb, ub) {
+        for (var i = 0; i < arr.length; i++) {
+            if (typeof arr[i] != 'number' || isNaN(arr[i]) ||
+                arr[i] < lb || arr[i] > ub) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // [0,1]
+    function randomfloat() {
+        return ~~(Math.random() * (1e8 + 1)) / 1e8;
+    }
+
+    function Generator() {
+        this.num = 10;
+        this.lb = 0;
+        this.ub = 0xff;
+        this.order = 'none';
+        this.weight = [1, 1];
+        this.repeat = false;
+
+        this.sort = function (arr) {
+            switch (this.order) {
+                case 'asce':
+                    arr.sort(function (a, b) {
+                        return a - b;
+                    });
+                    break;
+                case 'desc':
+                    arr.sort(function (a, b) {
+                        return b - a;
+                    });
+                    break;
+                case 'none':
+                default:
+                    break;
+            }
+            return arr;
+        }
+
+        this.generate = function () {
+            var weighted_partition = new Array();
+
+            for (var i = 0; i < this.weight.length; i++) {
+                for (var j = 0; j < this.weight[i]; j++) {
+                    weighted_partition.push(i);
+                }
+            }
+
+            var step = (this.ub - this.lb) / this.weight.length;
+            var set = new Set();
+
+            while (set.size < this.num) {
+                var partition = weighted_partition[~~(Math.random() *
+                    weighted_partition.length)];
+                var plb = this.lb + partition * step;   // partition lower bound
+                var pub = (partition < this.weight.length - 1) ?
+                    plb + step : this.ub;
+                var number = randomfloat() * (pub + 1 - plb) + plb;
+                set.add(this.repeat ? number : ~~number);
+            }
+
+            return this.sort(Array.from(set));
+        };
+
+        this.validate = function () {
+            var result = general(this);
+            if (result) {
+                return result;
+            }
+            if (!arrayIn(this.weight, 0, 10)) {
+                return '分区权重格式有误';
+            }
+            if (this.num < 0 || this.num > 9999) {
+                return '数据个数应在 0 到 9999 之间';
+            } else if (this.lb + 1 > this.ub) {
+                return '下限 +1 高于上限';
+            } else if (['asce', 'desc', 'none'].indexOf(this.order) == -1) {
+                return '不支持的排序方式: ' + this.order;
+            } else if (!this.repeat) {
+                if ((this.num > (this.ub - this.lb + 1) * 4 / 5)) {
+                    return '如果repeat=0, 数据个数应小于范围长度*4/5';
+                }
+                if (this.weight.indexOf(0) != -1 || variance(this.weight) > 2) {
+                    return '如果repeat=0, 分区权重不能含0, 方差应小于2';
+                }
+                return null;
+            } else {
+                return null;
+            }
+        }
+    }
+
+    function number_width(number, base) {
+        var width = 1, product = 1;
+        while (true) {
+            product *= base;
+            if (product >= number) {
+                return width;
+            }
+            width++;
+        }
+        return width;
+    }
+
+    function binary_width(number) {
+        var bits = toString2(number).length;
+        return parseInt(('8,'.repeat(8) + '16,'.repeat(8) +
+            '32,'.repeat(16) + '64,'.repeat(32)).split(',')[bits - 1]);
+    }
+
+    function toString2(number) {
+        if (number == 0) {
+            return 0;
+        }
+        var digits = new Array();
+        while (number) {
+            digits.push(number & 0x1);
+            number >>>= 1;
+        }
+        return digits.reverse().join('');
+    }
+
+    function toString8(number) {
+        var digits = new Array();
+        while (number) {
+            digits.push(number & 0x7);
+            number >>>= 3;
+        }
+        return digits.reverse().join('');
+    }
+
+    function toString16(number) {
+        if (number == 0) {
+            return 0;
+        }
+        var ch = new Array();
+        while (number) {
+            ch.push(['0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+                'a', 'b', 'c', 'd', 'e', 'f'][number & 0xf]);
+            number >>>= 4;
+        }
+        return ch.reverse().join('');
+    }
+
+    function formatb(number, ub) {
+        var string = toString2(number);
+        var width = binary_width(ub);
+        if (width > string.length) {
+            return '0'.repeat(width - string.length) + string + 'b';
+        } else {
+            return string + 'b';
+        }
+    }
+
+    function formath(number, style) {
+        var string = toString16(number);
+        switch (style) {
+            case 'c':
+                return '0x' + string;
+            case 'masm':
+                if (string.charAt(0) >= '0' && string.charAt(0) <= 9) {
+                    return string + 'h';
+                } else {
+                    return '0' + string + 'h';
+                }
+            case 'none':
+            default:
+                return string;
+        }
+    }
+
+    function Formatter() {
+        this.mode = 'hexadecimal';
+        this.precision = 0;
+        this.style = 'c';
+        this.cand = '一;二;三;四;五;六';
+        this.row = 10;
+        this.delimeter = ', ';
+        this.tail = true;
+        this.ub = 0xff;
+
+        this.format = function (arr) {
+            var result = '';
+
+            for (var i = 0; i < arr.length; i++) {
+                switch (this.mode) {
+                    case 'binary':
+                        result += formatb(~~arr[i], this.ub);
+                        break;
+                    case 'octal':
+                        result += '0' + toString8(~~arr[i]);
+                        break;
+                    case 'decimal':
+                        if (this.precision > 0) {
+                            result += arr[i].toFixed(this.precision);
+                        } else {
+                            result += ~~arr[i];
+                        }
+                        break;
+                    case 'hexadecimal':
+                    default:
+                        result += formath(~~arr[i], this.style);
+                        break;
+                    case 'string':
+                        result += this.cand[~~arr[i] % this.cand.length];
+                        break;
+                }
+                if (i < arr.length - 1) {
+                    if (this.tail) {
+                        result += this.delimeter;
+                    } else {
+                        result += (i + 1) % this.row == 0 ? '' : this.delimeter;
+                    }
+                }
+                if ((i + 1) % this.row == 0) {
+                    result += '\n';
+                }
+            }
+
+            return result;
+        }
+
+        this.validate = function () {
+            var result = general(this);
+            if (result) {
+                return result;
+            }
+            if (this.mode == 'string' && this.cand[0].length == 0) {
+                return '空字符串候选';
+            }
+            if (['binary', 'octal', 'decimal', 'hexadecimal',
+                'string'].indexOf(this.mode) == -1) {
+                return '不支持的模式: ' + this.mode;
+            } else if (this.precision < 0) {
+                return '十进制精度应大于等于 0';
+            } else if (['c', 'masm', 'none'].indexOf(this.style) == -1) {
+                return '不支持的十六进制风格: ' + this.style;
+            } else if (this.row < 1) {
+                return '每行显示的数据个数应大于 1';
+            } else {
+                return null;
+            }
+        }
+    }
+
+    function radio_value(name) {
+        var radios = document.getElementsByName(name);
+        for (var i = 0; i < radios.length; i++) {
+            if (radios[i].checked) {
+                return radios[i].value;
+            }
+        }
+        return null;
+    }
+
+    function input_value(name, base) {
+        if (typeof base !== 'undefined') {
+            return parseInt(document.getElementsByName(name)[0].value, base);
+        } else {
+            return parseInt(document.getElementsByName(name)[0].value);
+        }
+    }
+
+    function stringToArray(string) {
+        return string.split(/\s*;\s*/);
+    }
+
+    function stringToIntergers(string) {
+        var arr = stringToArray(string);
+        var result = new Array();
+        for (var i = 0; i < arr.length; i++) {
+            result.push(parseInt(arr[i]));
+        }
+        return result;
+    }
+
+    function getQueryValue(name) {
+        var regex = new RegExp('(?:^|&)' + name + '=([^&]*)(?:&|$)', 'i');
+        var matches = location.search.substr(1).match(regex);
+        return matches ? decodeURI(matches[1]) : null;
+    }
+
+    function Randomizer() {
+        this.fmt = new Formatter();
+        this.gen = new Generator();
+
+        this.parseQuery = function () {
+            var t = getQueryValue('num');
+            this.gen.num = t ? parseInt(t) : this.gen.num;
+            t = getQueryValue('lb');
+            this.gen.lb = t ? parseInt(t) : this.gen.lb;
+            t = getQueryValue('ub');
+            this.gen.ub = t ? parseInt(t) : this.gen.ub;
+            t = getQueryValue('order');
+            this.gen.order = t ? t : this.gen.order;
+            t = getQueryValue('weight');
+            this.gen.weight = t ? stringToIntergers(t) : this.gen.weight;
+            t = getQueryValue('repeat');
+            this.gen.repeat = t ? Boolean(parseInt(t)) : this.gen.repeat;
+
+            t = getQueryValue('mode');
+            this.fmt.mode = t ? t : this.fmt.mode;
+            t = getQueryValue('precision');
+            this.fmt.precision = t ? parseInt(t) : this.fmt.precision;
+            t = getQueryValue('style');
+            this.fmt.style = t ? t : this.fmt.style;
+            t = getQueryValue('cand');
+            this.fmt.cand = t ? stringToArray(t) : this.fmt.cand;
+            if (this.fmt.mode == 'string' && this.fmt.cand[0].length > 0) {
+                this.gen.ub = this.fmt.cand.length - 1;
+            }
+            t = getQueryValue('row');
+            this.fmt.row = t ? parseInt(t) : this.fmt.row;
+            t = getQueryValue('deli');
+            this.fmt.delimeter = t ? (t == 'hide' ? '' : t) : this.fmt.delimeter;
+            t = getQueryValue('tail');
+            this.fmt.tail = t ? Boolean(parseInt(t)) : this.fmt.tail;
+            this.fmt.ub = this.gen.ub;
+        };
+
+        this.readInputs = function () {
+            this.gen.num = input_value('num');
+            this.gen.lb = input_value('lb');
+            this.gen.ub = input_value('ub');
+            this.gen.order = radio_value('order');
+            this.gen.weight = stringToIntergers(document.getElementsByName('weight')[0].value);
+            this.gen.repeat = document.getElementsByName('repeat')[0].checked;
+
+            this.fmt.mode = radio_value('mode');
+            this.fmt.precision = input_value('precision');
+            this.fmt.style = radio_value('style');
+            this.fmt.cand = stringToArray(document.getElementsByName('cand')[0].value);
+            if (this.fmt.mode == 'string' && this.fmt.cand[0].length > 0) {
+                this.gen.ub = this.fmt.cand.length - 1;
+            }
+            this.fmt.row = input_value('row');
+            this.fmt.delimeter = document.getElementsByName('deli')[0].value;
+            this.fmt.tail = document.getElementsByName('tail')[0].checked;
+            this.fmt.ub = this.gen.ub;
+        };
+
+        this.correct = function () {
+            if (this.fmt.mode == 'decimal' && this.fmt.precision > 0) {
+                this.gen.repeat = true;
+                this.gen.ub -= 1;
+                this.fmt.ub = this.gen.ub;
+            }
+        }
+
+        this.generate = function () {
+            var err = this.fmt.validate();
+            if (err != null) {
+                alert('参数错误!' + err);
+                return '';
+            }
+            err = this.gen.validate();
+            if (err != null) {
+                alert('参数错误!' + err);
+                return '';
+            }
+            this.correct();
+            return this.fmt.format(this.gen.generate());
+        }
+    }
+
+    function manual() {
+        var randomizer = new Randomizer();
+        randomizer.readInputs();
+        document.getElementById('result').innerText = randomizer.generate();
+    }
+
+    function automate() {
+        var title = getQueryValue('title');
+        if (title) {
+            if (title == 'hide') {
+                document.getElementById('title').hidden = true;
+            } else {
+                document.getElementById('title').innerHTML = title;
+            }
+        }
+        var btn = getQueryValue('btn');
+        if (btn) {
+            if (btn == 'hide') {
+                document.getElementById('reset').hidden = true;
+            } else {
+                document.getElementById('reset').innerHTML = btn;
+            }
+        }
+        var randomizer = new Randomizer();
+        randomizer.parseQuery();
+        document.getElementById('result').innerText = randomizer.generate();
+    }
+
+    function copy() {
+        var text = document.getElementById('result').innerText;
+        if (text.length > 0) {
+            var input = document.createElement('input');
+            input.value = text;
+            document.body.appendChild(input);
+            input.select();
+            document.execCommand('Copy');
+            document.body.removeChild(input);
+        }
+    }
+
+    window.onload = function () {
+        if (location.search.length == 0) {
+            document.getElementById('container').style.display = 'block';
+        } else {
+            var container = document.getElementById('container');
+            container.innerHTML = '';
+            var h1 = document.createElement('h1');
+            h1.id = 'title';
+            h1.innerHTML = 'Randomizer - automation mode';
+            container.appendChild(h1);
+            var pre = document.createElement('pre');
+            pre.id = 'result';
+            container.appendChild(pre);
+            var btn = document.createElement('button');
+            btn.innerHTML = '重置';
+            btn.id = 'reset';
+            btn.onclick = function () {
+                location.reload();
+            };
+            container.appendChild(btn);
+            container.style.display = 'block';
+            automate();
+        }
+    }
+</script>
+
+</html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <title>字符串生成</title>
+    <style type="text/css">
+        div {
+            margin: 20px;
+        }
+
+        .container {
+            margin: 10% 30%;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container" class="container">
+        <div>
+            <p>
+                <b>字符串生成</b>
+                作者: <a href="https://github.com/hyan23" target="_blank">hyan23</a>
+            </p>
+        </div>
+        <div>
+            成分:
+            <input name="letter"" type="checkbox" checked/>字母
+            <input name="number" type="checkbox" checked/>数字
+            <input name="symbol" type="checkbox" checked/>符号
+            <br>
+            长度:
+            <input name="length" type="text" value="10"/>
+            <input name="bwjd" type="checkbox" />帮我决定
+            <br>
+            <input type="button" onclick="generate();" value="生成">
+        </div>
+        <div>
+            <iframe id="result"></iframe>
+        </div>
+    </div>
+</body>
+
+<script>
+    function input_value(name, base) {
+        if (typeof base !== 'undefined') {
+            return parseInt(document.getElementsByName(name)[0].value, base);
+        } else {
+            return parseInt(document.getElementsByName(name)[0].value);
+        }
+    }
+
+    function generate() {
+        var cand = "";
+        if (document.getElementsByName('letter')[0].checked) {
+            cand += 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        }
+        if (document.getElementsByName('number')[0].checked) {
+            cand += '0123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789';
+        }
+        if (document.getElementsByName('symbol')[0].checked) {
+            cand += '*()-_=+[{]},<.>*()-_=+[{]},<.>';
+        }
+        
+        if (document.getElementsByName('bwjd')[0].checked) {
+            var length = 1 + Math.floor(Math.random() * 20);
+            document.getElementsByName('length')[0].value = length;
+        } else {
+            var length = input_value('length');
+        }
+        if (isNaN(length)) {
+            alert('输入有误');
+            return;
+        }
+        
+        var iframe = document.getElementById('result');
+        iframe.src = '../?mode=string&num=' + length + '&row=' + length + '&cand=' + cand.split('').join(';') + '&repeat=1&deli=hide&title=hide&btn=hide';
+    }
+</script>
+
+</html>
