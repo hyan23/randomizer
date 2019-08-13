@@ -14,7 +14,7 @@
             display: none;
         }
 
-        .emphasize {
+        .highlight {
             color: red;
         }
     </style>
@@ -25,49 +25,74 @@
         <div>
             <p>
                 <b>随机列表生成器</b>
-                作者: <a href="https://github.com/hyan23" target="_blank">hyan23</a>
+                作者:
+                <a href="https://github.com/hyan23" target="_blank">hyan23</a>
             </p>
-            <p><a href="doc/guide.html" target="_blank">本工具支持url编程</a>&nbsp;|&nbsp;<a href="doc/app.html" target="_blank">应用列表</a></p>
+            <p>
+                <a href="doc/guide.html" target="_blank">本工具支持url编程</a>
+                |
+                <a href="doc/app.html" target="_blank">应用列表</a>
+            </p>
         </div>
+
         <div>
-            <span class="emphasize">*</span>模式:
+            <span class="highlight">*</span>模式:
             <input name="mode" type="radio" value="binary">二进制
             <input name="mode" type="radio" value="octal">八进制
-            <input name="mode" type="radio" value="decimal">十进制
-            <input name="mode" type="radio" value="hexadecimal" checked>十六进制
+            <input name="mode" type="radio" value="decimal" checked>十进制
+            <input name="mode" type="radio" value="hexadecimal">十六进制
             <input name="mode" type="radio" value="string">字符串
-            <br> 十进制精度:
-            <input name="precision" type="text" maxlength="6" value="0">
-            <br> 十六进制风格:
+            <br>
+
+            十进制精度:
+            <input name="precision" type="text" maxlength="1" value="0">
+            <br>
+            十六进制风格:
             <input name="style" type="radio" value="c" checked>C
             <input name="style" type="radio" value="masm">Masm
             <input name="style" type="radio" value="none">无
-            <br> 字符串候选(以英文分号隔开):
+            <br>
+            字符串候选(以英文分号隔开):
             <input name="cand" type="text" maxlength="100" value="一;二;三;四;五;六">
-            <br> <span class="emphasize">*</span>数据个数:
+            <br>
+
+            <span class="highlight">*</span>数据个数:
             <input name="num" type="text" maxlength="4" value="10">
-            <br> 每行显示个数:
+            <br>
+            每行显示个数:
             <input name="row" type="text" maxlength="4" value="10">
-            <br> <span class="emphasize">*</span>数据范围: [
+            <br>
+
+            <span class="highlight">*</span>数据范围: [
             <input name="lb" type="text" maxlength="10" value="0">,&nbsp;
             <input name="ub" type="text" maxlength="10" value="0xff">]
-            <br> 分区权重(以英文分号隔开): <a title="分区把数据范围均分为分号数+1份, 每个分区的权重可取[0,10]内的整数值, 权重越大, 选中该分区内数字的概率越大" href="#">帮助?</a>
+            <br>
+            分区权重(以英文分号隔开):
+            <a title="分区把数据范围均分为分号数 +1 份, 每个分区的权重可取 [0,10] 内的整数值, 权重越大, 选中该分区内数字的概率越大" href="#">帮助?</a>
             <input name="weight" type="text" maxlength="100" value="1;1">
-            <br> 分隔符:
+            <br>
+
+            分隔符:
             <input name="deli" type="text" maxlength="4" value=", ">
-            <br> 允许重复:
-            <input name="repeat" type="checkbox" checked> 行尾分隔符:
+            <br>
+            允许重复:
+            <input name="repeat" type="checkbox" checked>
+            行尾分隔符:
             <input name="tail" type="checkbox" checked>
-            <br> 排序:
+            <br>
+            排序:
             <input name="order" type="radio" value="asce">升序
             <input name="order" type="radio" value="desc">降序
             <input name="order" type="radio" value="none" checked>不排序
             <br>
             <br>
+
             <input type="button" onclick="manual();" value="生成">
             <input type="button" onclick="copy();" value="拷贝">
+            <!-- https://www.w3schools.com/jsref/met_loc_reload.asp -->
             <input type="button" onclick="location.reload();" value="重置">
         </div>
+
         <div>
             <pre id="result"></pre>
         </div>
