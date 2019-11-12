@@ -521,12 +521,12 @@
     function copy() {
         var text = document.getElementById('result').innerText;
         if (text.length > 0) {
-            var input = document.createElement('input');
-            input.value = text;
-            document.body.appendChild(input);
-            input.select();
+            var textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
             document.execCommand('Copy');
-            document.body.removeChild(input);
+            document.body.removeChild(textarea);
         }
     }
 
